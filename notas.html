@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bloco de Notas Rápido</title>
+<style>
+  body {
+    margin: 0;
+    font-family: sans-serif;
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+    background: #f4f4f4;
+  }
+
+  /* Menu lateral */
+  #sidebar {
+    width: 250px;
+    background: #333;
+    color: white;
+    padding: 10px;
+    box-sizing: border-box;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: -250px;
+    transition: left 0.3s ease;
+    z-index: 10;
+    overflow-y: auto;
+  }
+  #sidebar.visible {
+    left: 0;
+  }
+
+  #sidebar h2 {
+    margin-top: 0;
+  }
+
+  /* Lista de notas */
+  .note-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 8px;
+    border-bottom: 1px solid #444;
+    cursor: pointer;
+  }
+  .note-item:hover {
+    background: #555;
+  }
+  .note-text {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .delete-btn {
+    background: transparent;
+    color: #ff5c5c;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    margin-left: 8px;
+  }
+  .delete-btn:hover {
+    color: red;
+  }
+
+  .note-item.selected {
+    background: #1e90ff;
+  }
+
+  /* Fundo escuro quando menu aberto */
+  #overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.3);
+    display: none;
+    z-index: 5;
+  }
+  #overlay.visible {
+    display: block;
+  }
+
+  /* Área principal */
+  #main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    margin-left: 0;
+    transition: margin-left 0.3s ease;
+    position: relative;
+  }
+
+  /* Barra de topo */
+  #topBar {
+    background: #222;
+    color: white;
+    padding: 5px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: wrap;
+  }
+
+  button {
+    background: #444;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    cursor: pointer;
+    border-radius: 3px;
+  }
+  button:hover {
+    background: #555;
+  }
+
+  #shareBtn {
+    background: #4CAF50;
+  }
+  #shareBtn:hover {
+    background: #45a049;
+  }
+
+  /* Container da área de conteúdo */
+  #contentArea {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Modo leitura */
+  #readingView {
+    width: 100%;
+    height: 100%;
+    padding: 10px;
+    box-sizing: border-box;
+    background: white;
+    font-size: 16px;
+    font-family: monospace;
+    line-height: 1.2;
+    white-space: pre-wrap;
+    overflow-y: auto;
+    cursor: text;
+    color: #333;
+  }
+
+  #readingView:empty::before {
+    content: "Escreva aqui...";
+    color: #999;
+    font-style: italic;
+  }
+
+  /* Área de texto (modo edição) */
+  #noteContent {
+    width: 100%;
+    height: 100%;
+    border: none;
+    outline: none;
+    font-size: 16px;
+    font-family: monospace;
+    line-height: 1.2;
+    padding: 10px;
+    box-sizing: border-box;
+    resize: none;
+    background: white;
+    display: none;
+  }
+
+  /* Estados visuais */
+  .editing #readingView {
+    display: none;
+  }
+
+  .editing #noteContent {
+    display: block;
+  }
+
+  /* Toast de notificação */
+  #toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  #toast.show {
+    opacity: 1;
+  }
+</style>
+</head>
+<body>
+
+<!-- Toast de notificação -->
+<div id="toast"></div>
+
+<!-- Overlay -->
+<div id="overlay"></div>
+
+<!-- Menu lateral -->
+<div id="sidebar">
+  <h2>Notas</h2>
+  <input type="text" id="searchNotes" placeholder="Buscar notas..." style="width:100%;padding:5px;box-sizing:border-box;margin-bottom:10px;">
+  <div id="notesList"></div>
+</div>
+
+<!-- Conteúdo principal -->
+<div id="main">
+  <div id="topBar">
+    <button id="toggleSidebar">☰</button>
+    <button id="newNote">Nova Nota</button>
+    <button id="editNote" title="Editar nota">✏️</button>
+    <button id="shareBtn" title="Compartilhar nota">📤 Compartilhar</button>
+    <button id="undoBtn" title="Desfazer">↩️</button>
+    <button id="redoBtn" title="Refazer">↪️</button>
+  </div>
+  <div id="contentArea">
+    <div id="readingView"></div>
+    <textarea id="noteContent" placeholder="Escreva aqui..."></textarea>
+  </div>
+</div>
+
+<script>
+  let notes = JSON.parse(localStorage.getItem("notesData")) || [];
+  notes.forEach(note => {
+    if (!note.undoStack) note.undoStack = [];
+    if (!note.redoStack) note.redoStack = [];
+  });
+  let currentNoteId = localStorage.getItem("lastNoteId") !== null ? Number(localStorage.getItem("lastNoteId")) : null;
+  let isEditing = false;
+  let lastActionTime = 0;
+  const DELAY = 400;
+  const HISTORY_LIMIT = 100;
+
+  const notesList = document.getElementById("notesList");
+  const noteContent = document.getElementById("noteContent");
+  const readingView = document.getElementById("readingView");
+  const contentArea = document.getElementById("contentArea");
+  const sidebar = document.getElementById("sidebar");
+  const overlay = document.getElementById("overlay");
+  const editButton = document.getElementById("editNote");
+  const shareButton = document.getElementById("shareBtn");
+  const undoButton = document.getElementById("undoBtn");
+  const redoButton = document.getElementById("redoBtn");
+  const toast = document.getElementById("toast");
+
+  function debounce(func, delay) {
+    let timer;
+    return function(...args) {
+      clearTimeout(timer);
+      timer = setTimeout(() => func.apply(this, args), delay);
+    };
+  }
+
+  function saveNotes() {
+    localStorage.setItem("notesData", JSON.stringify(notes));
+    localStorage.setItem("lastNoteId", currentNoteId !== null ? currentNoteId : "");
+  }
+
+  const debouncedSave = debounce(saveNotes, 500);
+
+  const searchInput = document.getElementById("searchNotes");
+
+  function showToast(message) {
+    toast.textContent = message;
+    toast.classList.add('show');
+    setTimeout(() => {
+      toast.classList.remove('show');
+    }, 3000);
+  }
+
+  async function shareNote() {
+    if (currentNoteId === null || (!notes[currentNoteId].content && !noteContent.value)) {
+      showToast("Não há conteúdo para compartilhar");
+      return;
+    }
+
+    const content = isEditing ? noteContent.value : notes[currentNoteId].content;
+    
+    if (!content.trim()) {
+      showToast("Não há conteúdo para compartilhar");
+      return;
+    }
+
+    try {
+      // Verifica se a Web Share API com files é suportada
+      if (navigator.share && navigator.canShare) {
+        // Cria um blob com o conteúdo da nota
+        const blob = new Blob([content], { type: 'text/plain' });
+        
+        // Gera um nome para o arquivo baseado nas primeiras palavras da nota
+        const firstLine = content.split('\n')[0].substring(0, 30).trim();
+        const fileName = firstLine ? `${firstLine.replace(/[^\w\s-]/g, '')}.txt` : 'nota.txt';
+        
+        // Cria o arquivo
+        const file = new File([blob], fileName, { type: 'text/plain' });
+        
+        // Testa se pode compartilhar arquivos
+        const shareData = {
+          title: 'Compartilhar Nota',
+          text: 'Compartilhando nota do Bloco de Notas',
+          files: [file]
+        };
+
+        if (navigator.canShare(shareData)) {
+          await navigator.share(shareData);
+          showToast("Nota compartilhada com sucesso!");
+        } else {
+          // Fallback: compartilha apenas o texto
+          await navigator.share({
+            title: 'Nota do Bloco de Notas',
+            text: content
+          });
+          showToast("Nota compartilhada como texto!");
+        }
+      } else {
+        // Fallback para navegadores sem suporte à Web Share API
+        await navigator.clipboard.writeText(content);
+        showToast("Conteúdo copiado para a área de transferência! Cole onde desejar.");
+      }
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        // Usuário cancelou o compartilhamento
+        return;
+      }
+      
+      console.error('Erro ao compartilhar:', error);
+      
+      // Último fallback: tentar copiar para clipboard
+      try {
+        await navigator.clipboard.writeText(content);
+        showToast("Erro no compartilhamento. Conteúdo copiado para área de transferência.");
+      } catch (clipboardError) {
+        showToast("Erro ao compartilhar. Tente copiar manualmente o conteúdo.");
+      }
+    }
+  }
+
+  function renderNotesList(filteredNotes = null) {
+    notesList.innerHTML = "";
+    let listToRender = filteredNotes || notes;
+
+    if (listToRender.length === 0) {
+      notesList.innerHTML = "<div style='padding:10px;color:#aaa;'>Nenhum resultado encontrado</div>";
+      return;
+    }
+
+    listToRender.forEach((noteObj) => {
+      const index = notes.indexOf(noteObj);
+      const noteItem = document.createElement("div");
+      noteItem.className = "note-item" + (index === currentNoteId ? " selected" : "");
+
+      const noteText = document.createElement("div");
+      noteText.className = "note-text";
+      noteText.textContent = noteObj.content ? noteObj.content.split("\n")[0] : "Nova Nota";
+      noteText.onclick = () => {
+        selectNote(index);
+        closeSidebar();
+      };
+
+      const deleteBtn = document.createElement("button");
+      deleteBtn.className = "delete-btn";
+      deleteBtn.innerHTML = "❌";
+      deleteBtn.onclick = (e) => {
+        e.stopPropagation();
+        if (confirm("Tem certeza que deseja excluir esta nota?")) {
+          deleteNote(index);
+        }
+      };
+
+      noteItem.appendChild(noteText);
+      noteItem.appendChild(deleteBtn);
+      notesList.appendChild(noteItem);
+    });
+  }
+
+  // Função de busca
+  searchInput.addEventListener("input", () => {
+    const query = searchInput.value.trim().toLowerCase();
+    if (!query) {
+      renderNotesList();
+      return;
+    }
+
+    const terms = query.split(/\s+/).filter(t => t);
+    let filtered = notes
+      .map(note => {
+        let score = 0;
+        const contentLower = (note.content || "").toLowerCase();
+        terms.forEach(term => {
+          if (contentLower.includes(term)) {
+            score += (contentLower.match(new RegExp(term, "g")) || []).length;
+          }
+        });
+        return { note, score };
+      })
+      .filter(item => item.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .map(item => item.note);
+
+    renderNotesList(filtered);
+  });
+
+  function selectNote(index) {
+    if (currentNoteId !== null && currentNoteId !== index && isEditing) {
+      notes[currentNoteId].content = noteContent.value;
+    }
+    currentNoteId = index;
+    const content = notes[index].content || "";
+    noteContent.value = content;
+    readingView.textContent = content;
+    setViewMode();
+    lastActionTime = 0;
+    saveNotes();
+    renderNotesList();
+  }
+
+  function deleteNote(index) {
+    notes.splice(index, 1);
+    if (index === currentNoteId) {
+      currentNoteId = null;
+      noteContent.value = "";
+      readingView.textContent = "";
+      setViewMode();
+    } else if (index < currentNoteId) {
+      currentNoteId--;
+    }
+    if (notes.length === 0) {
+      currentNoteId = null;
+      noteContent.value = "";
+      readingView.textContent = "";
+      setEditMode();
+    }
+    saveNotes();
+    renderNotesList();
+  }
+
+  function undo() {
+    if (currentNoteId === null || !isEditing) return;
+    const note = notes[currentNoteId];
+    if (note.undoStack.length === 0) return;
+    const prevState = note.undoStack.pop();
+    note.redoStack.push(noteContent.value);
+    if (note.redoStack.length > HISTORY_LIMIT) note.redoStack.shift();
+    noteContent.value = prevState;
+    note.content = prevState;
+    saveNotes();
+    renderNotesList();
+  }
+
+  function redo() {
+    if (currentNoteId === null || !isEditing) return;
+    const note = notes[currentNoteId];
+    if (note.redoStack.length === 0) return;
+    const nextState = note.redoStack.pop();
+    note.undoStack.push(noteContent.value);
+    if (note.undoStack.length > HISTORY_LIMIT) note.undoStack.shift();
+    noteContent.value = nextState;
+    note.content = nextState;
+    saveNotes();
+    renderNotesList();
+  }
+
+  document.getElementById("newNote").onclick = () => {
+    if (currentNoteId !== null && isEditing) {
+      notes[currentNoteId].content = noteContent.value;
+    }
+    notes.push({ content: "", undoStack: [], redoStack: [] });
+    currentNoteId = notes.length - 1;
+    noteContent.value = "";
+    readingView.textContent = "";
+    setEditMode();
+    saveNotes();
+    renderNotesList();
+  };
+
+  noteContent.addEventListener("input", () => {
+    if (!isEditing) return;
+    if (currentNoteId === null) {
+      if (noteContent.value.trim() !== "") {
+        notes.push({ content: noteContent.value, undoStack: [], redoStack: [] });
+        currentNoteId = notes.length - 1;
+      }
+    } else {
+      notes[currentNoteId].content = noteContent.value;
+    }
+    debouncedSave();
+    renderNotesList();
+  });
+
+  noteContent.addEventListener('beforeinput', (e) => {
+    if (!isEditing || currentNoteId === null) return;
+    const now = Date.now();
+    const selectedLength = noteContent.selectionEnd - noteContent.selectionStart;
+    const forceNew = e.inputType === 'insertFromPaste' ||
+                     e.inputType === 'insertLineBreak' ||
+                     e.inputType === 'insertParagraph' ||
+                     e.inputType === 'deleteByCut' ||
+                     (e.inputType.includes('deleteContent') && selectedLength > 0);
+    if (forceNew || now - lastActionTime > DELAY) {
+      const note = notes[currentNoteId];
+      note.undoStack.push(noteContent.value);
+      note.redoStack = [];
+      if (note.undoStack.length > HISTORY_LIMIT) note.undoStack.shift();
+    }
+    lastActionTime = now;
+  });
+
+  noteContent.addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.key === 'z') {
+      e.preventDefault();
+      undo();
+    } else if (e.ctrlKey && e.key === 'y') {
+      e.preventDefault();
+      redo();
+    }
+  });
+
+  shareButton.onclick = shareNote;
+  undoButton.onclick = undo;
+  redoButton.onclick = redo;
+
+  function setEditMode() {
+    isEditing = true;
+    contentArea.classList.add("editing");
+    noteContent.focus();
+  }
+
+  function setViewMode() {
+    isEditing = false;
+    contentArea.classList.remove("editing");
+    if (currentNoteId !== null) {
+      readingView.textContent = noteContent.value;
+      notes[currentNoteId].content = noteContent.value;
+    }
+  }
+
+  // Função para calcular a posição do cursor baseada no clique
+  function getTextPositionFromClick(element, event) {
+    const range = document.caretRangeFromPoint(event.clientX, event.clientY);
+    if (!range) return 0;
+
+    // Criar um range temporário para calcular a posição
+    const textNode = range.startContainer;
+    const offset = range.startOffset;
+    
+    if (textNode.nodeType === Node.TEXT_NODE) {
+      // Calcular posição relativa ao início do texto completo
+      const walker = document.createTreeWalker(
+        element,
+        NodeFilter.SHOW_TEXT,
+        null,
+        false
+      );
+      
+      let position = 0;
+      let currentNode;
+      
+      while (currentNode = walker.nextNode()) {
+        if (currentNode === textNode) {
+          return position + offset;
+        }
+        position += currentNode.textContent.length;
+      }
+    }
+    
+    return 0;
+  }
+
+  // Botão de editar (lápis) - comportamento original
+  editButton.onclick = () => {
+    if (currentNoteId !== null) {
+      setEditMode();
+    }
+  };
+
+  // Duplo clique no modo leitura - entra no modo edição com cursor posicionado
+  readingView.addEventListener('dblclick', (event) => {
+    if (currentNoteId !== null) {
+      const clickPosition = getTextPositionFromClick(readingView, event);
+      setEditMode();
+      
+      // Posicionar cursor no textarea
+      requestAnimationFrame(() => {
+        noteContent.setSelectionRange(clickPosition, clickPosition);
+      });
+    }
+  });
+
+  function openSidebar() {
+    sidebar.classList.add("visible");
+    overlay.classList.add("visible");
+  }
+
+  function closeSidebar() {
+    sidebar.classList.remove("visible");
+    overlay.classList.remove("visible");
+  }
+
+  function toggleSidebar() {
+    sidebar.classList.contains("visible") ? closeSidebar() : openSidebar();
+  }
+
+  document.getElementById("toggleSidebar").onclick = toggleSidebar;
+  overlay.onclick = closeSidebar;
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      if (isEditing) {
+        setViewMode();
+      } else {
+        closeSidebar();
+      }
+    }
+  });
+
+  renderNotesList();
+
+  if (notes.length === 0) {
+    notes.push({ content: "", undoStack: [], redoStack: [] });
+    currentNoteId = 0;
+    setEditMode();
+  } else if (currentNoteId !== null && notes[currentNoteId]) {
+    selectNote(currentNoteId);
+  } else {
+    setViewMode();
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,1792 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Botão Flutuante</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #000;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+        }
+
+        .demo-content {
+            text-align: center;
+            color: white;
+            font-size: 2rem;
+        }
+
+        .demo-content.hidden {
+            display: none;
+        }
+
+        .folders-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            padding: 40px;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .folder-item {
+            width: 120px;
+            height: 120px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 1rem;
+            text-align: center;
+            padding: 10px;
+            word-wrap: break-word;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+
+        .folder-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .folder-item-count {
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            background: white;
+            color: #333;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 3px 7px;
+            border-radius: 4px;
+            min-width: 24px;
+            text-align: center;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            pointer-events: none;
+        }
+
+        .item-card {
+            width: 120px;
+            height: 150px;
+            border-radius: 10px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            background: white;
+        }
+
+        .item-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .item-image {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .item-name {
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            color: #333;
+            font-size: 0.85rem;
+            font-weight: 600;
+            padding: 0 5px;
+            text-align: center;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .floating-button {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .floating-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .floating-button::before {
+            content: '+';
+            color: white;
+            font-size: 2rem;
+            font-weight: bold;
+        }
+
+        .floating-button.active::before {
+            content: '×';
+            font-size: 2.5rem;
+        }
+
+        .backup-button {
+            position: fixed;
+            bottom: 170px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .backup-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .backup-button.active {
+            background: linear-gradient(135deg, #38ef7d 0%, #11998e 100%);
+        }
+
+        .backup-button svg {
+            width: 28px;
+            height: 28px;
+            color: white;
+        }
+
+        .backup-menu {
+            position: fixed;
+            bottom: 240px;
+            right: 30px;
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 1001;
+        }
+
+        .backup-menu.active {
+            display: flex;
+        }
+
+        .select-button {
+            position: fixed;
+            bottom: 100px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .select-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .select-button svg {
+            width: 24px;
+            height: 24px;
+            color: white;
+        }
+
+        .back-button {
+            position: fixed;
+            top: 30px;
+            left: 30px;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            color: white;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            z-index: 1000;
+            display: none;
+        }
+
+        .back-button.active {
+            display: block;
+        }
+
+        .back-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .button-menu {
+            position: fixed;
+            bottom: 100px;
+            right: 30px;
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 1001;
+        }
+
+        .button-menu.active {
+            display: flex;
+        }
+
+        .selection-menu {
+            position: fixed;
+            bottom: 30px;
+            right: 100px;
+            display: none;
+            flex-direction: row;
+            gap: 10px;
+            z-index: 1001;
+        }
+
+        .selection-menu.active {
+            display: flex;
+        }
+
+        .selection-action-btn {
+            width: 50px;
+            height: 50px;
+            background: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .selection-action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .selection-action-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .selection-action-btn.move {
+            color: #667eea;
+        }
+
+        .selection-action-btn.move:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .selection-action-btn.select-all {
+            color: #4CAF50;
+        }
+
+        .selection-action-btn.select-all:hover {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .selection-action-btn.delete {
+            color: #f5576c;
+        }
+
+        .selection-action-btn.delete:hover {
+            background: #f5576c;
+            color: white;
+        }
+
+        .selection-action-btn.cancel {
+            color: #999;
+        }
+
+        .selection-action-btn.cancel:hover {
+            background: #999;
+            color: white;
+        }
+
+        .menu-btn {
+            padding: 12px 20px;
+            background: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #667eea;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .menu-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+            background: #667eea;
+            color: white;
+        }
+
+        .form-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            padding: 20px;
+            display: none;
+            z-index: 1002;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .form-modal.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+
+        .form-modal h2 {
+            margin-bottom: 15px;
+            color: #667eea;
+            font-size: 1.3rem;
+        }
+
+        .save-btn {
+            width: 100%;
+            padding: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .save-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+            position: relative;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 4px;
+            color: #555;
+            font-weight: 500;
+            font-size: 0.85rem;
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            padding-right: 40px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .paste-btn {
+            position: absolute;
+            right: 8px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #667eea;
+            transition: all 0.2s ease;
+        }
+
+        .paste-btn:hover {
+            color: #764ba2;
+            transform: scale(1.1);
+        }
+
+        .paste-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-group input[type="file"] {
+            padding: 8px;
+        }
+
+        .color-options {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .color-option {
+            width: 100%;
+            height: 50px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 3px solid transparent;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .color-option:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .color-option.selected {
+            border: 3px solid #333;
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .item-menu {
+            position: fixed;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            padding: 8px;
+            display: none;
+            z-index: 1001;
+            min-width: 120px;
+        }
+
+        .item-menu.active {
+            display: block;
+        }
+
+        .item-menu-btn {
+            width: 100%;
+            padding: 10px 16px;
+            background: none;
+            border: none;
+            text-align: left;
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: #333;
+            border-radius: 4px;
+            transition: background 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .item-menu-btn:hover {
+            background: #f5f5f5;
+        }
+
+        .item-menu-btn.danger {
+            color: #f5576c;
+        }
+
+        .item-menu-btn.danger:hover {
+            background: #fff0f2;
+        }
+
+        .item-card.selected {
+            outline: 3px solid #667eea;
+            outline-offset: 2px;
+        }
+
+        .folder-item.selected {
+            outline: 3px solid #667eea;
+            outline-offset: 2px;
+        }
+
+        .folder-item.move-target {
+            outline: 3px solid #4CAF50;
+            outline-offset: 2px;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                outline-color: #4CAF50;
+            }
+            50% {
+                outline-color: #81C784;
+            }
+        }
+
+        .move-here-indicator {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 60px;
+            background: #4CAF50;
+            border: none;
+            border-radius: 50%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
+            z-index: 1001;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .move-here-indicator:hover {
+            background: #45a049;
+            transform: translateX(-50%) scale(1.1);
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.5);
+        }
+
+        .move-here-indicator.active {
+            display: flex;
+        }
+
+        .move-here-indicator svg {
+            width: 28px;
+            height: 28px;
+            color: white;
+        }
+
+        .move-cancel-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background: #f5576c;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            z-index: 1001;
+        }
+
+        .move-cancel-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .move-cancel-btn.active {
+            display: flex;
+        }
+
+        .move-cancel-btn svg {
+            width: 28px;
+            height: 28px;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-content" id="emptyMessage">
+        <h1>Vazio</h1>
+    </div>
+
+    <div class="folders-container" id="foldersContainer"></div>
+
+    <button class="back-button" id="backButton">← Voltar</button>
+
+    <button class="select-button" id="selectBtn">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 11l3 3L22 4"></path>
+            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+        </svg>
+    </button>
+
+    <div class="selection-menu" id="selectionMenu">
+        <button class="selection-action-btn cancel" id="cancelSelectionBtn" title="Cancelar">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        </button>
+        <button class="selection-action-btn select-all" id="selectAllBtn" title="Selecionar Tudo">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 11l3 3L22 4"></path>
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                <path d="M9 19l-3-3"></path>
+            </svg>
+        </button>
+        <button class="selection-action-btn move" id="moveBtn" title="Mover">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="5 9 2 12 5 15"></polyline>
+                <polyline points="9 5 12 2 15 5"></polyline>
+                <polyline points="15 19 12 22 9 19"></polyline>
+                <polyline points="19 9 22 12 19 15"></polyline>
+                <line x1="2" y1="12" x2="22" y2="12"></line>
+                <line x1="12" y1="2" x2="12" y2="22"></line>
+            </svg>
+        </button>
+        <button class="selection-action-btn delete" id="deleteBtn" title="Apagar">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+        </button>
+    </div>
+
+    <div class="button-menu" id="buttonMenu">
+        <button class="menu-btn" id="addItemBtn">Adicionar Item</button>
+        <button class="menu-btn" id="createFolderBtn">Criar Pasta</button>
+    </div>
+
+    <div class="form-modal" id="formModal">
+        <div class="form-group">
+            <label for="nome">Nome:</label>
+            <input type="text" id="nome" placeholder="Digite o nome">
+        </div>
+        <div class="form-group">
+            <label for="site">Site:</label>
+            <div class="input-wrapper">
+                <input type="url" id="site" placeholder="https://exemplo.com">
+                <button class="paste-btn" id="pasteSite" type="button">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                        <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="imagem">Imagem:</label>
+            <div class="input-wrapper">
+                <input type="text" id="imagem" placeholder="https://exemplo.com/imagem.jpg">
+                <button class="paste-btn" id="pasteImage" type="button">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                        <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <button class="save-btn">Salvar</button>
+    </div>
+
+    <div class="form-modal" id="folderModal">
+        <div class="form-group">
+            <label for="nomePasta">Nome da Pasta:</label>
+            <input type="text" id="nomePasta" placeholder="Digite o nome da pasta">
+        </div>
+        <div class="form-group">
+            <label for="corPasta">Cor da Pasta:</label>
+            <div class="color-options">
+                <div class="color-option" data-color="linear-gradient(135deg, #667eea 0%, #764ba2 100%)" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%)"></div>
+                <div class="color-option" data-color="linear-gradient(135deg, #f093fb 0%, #f5576c 100%)" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%)"></div>
+                <div class="color-option" data-color="linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)"></div>
+                <div class="color-option" data-color="linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)"></div>
+                <div class="color-option" data-color="linear-gradient(135deg, #fa709a 0%, #fee140 100%)" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%)"></div>
+                <div class="color-option" data-color="linear-gradient(135deg, #30cfd0 0%, #330867 100%)" style="background: linear-gradient(135deg, #30cfd0 0%, #330867 100%)"></div>
+                <div class="color-option" data-color="linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)"></div>
+                <div class="color-option" data-color="linear-gradient(135deg, #ff9a56 0%, #ff6a88 100%)" style="background: linear-gradient(135deg, #ff9a56 0%, #ff6a88 100%)"></div>
+                <div class="color-option" data-color="linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)" style="background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)"></div>
+                <div class="color-option" data-color="linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%)" style="background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%)"></div>
+                <div class="color-option" data-color="linear-gradient(135deg, #d299c2 0%, #fef9d7 100%)" style="background: linear-gradient(135deg, #d299c2 0%, #fef9d7 100%)"></div>
+                <div class="color-option" data-color="linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%)" style="background: linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%)"></div>
+            </div>
+        </div>
+        <button class="save-btn">Salvar</button>
+    </div>
+
+    <button class="floating-button" id="floatingBtn"></button>
+
+    <button class="backup-button" id="backupBtn" title="Fazer Backup">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+    </button>
+
+    <div class="backup-menu" id="backupMenu">
+        <button class="menu-btn" id="downloadBackupBtn">Baixar Backup</button>
+        <button class="menu-btn" id="uploadBackupBtn">Restaurar Backup</button>
+        <input type="file" id="fileInput" accept=".json" style="display: none;">
+    </div>
+
+    <button class="move-here-indicator" id="moveHereIndicator" title="Colar aqui">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+            <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+        </svg>
+    </button>
+
+    <button class="move-cancel-btn" id="moveCancelBtn">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+    </button>
+
+    <div class="item-menu" id="itemMenu">
+        <button class="item-menu-btn" id="openItemBtn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                <polyline points="15 3 21 3 21 9"></polyline>
+                <line x1="10" y1="14" x2="21" y2="3"></line>
+            </svg>
+            Abrir
+        </button>
+        <button class="item-menu-btn" id="editItemBtn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+            Editar
+        </button>
+    </div>
+
+    <script>
+        const btn = document.getElementById('floatingBtn');
+        const menu = document.getElementById('buttonMenu');
+        const modal = document.getElementById('formModal');
+        const folderModal = document.getElementById('folderModal');
+        const addItemBtn = document.getElementById('addItemBtn');
+        const createFolderBtn = document.getElementById('createFolderBtn');
+        const emptyMessage = document.getElementById('emptyMessage');
+        const foldersContainer = document.getElementById('foldersContainer');
+        const saveFolderBtn = folderModal.querySelector('.save-btn');
+        const saveItemBtn = modal.querySelector('.save-btn');
+        const nomePastaInput = document.getElementById('nomePasta');
+        const nomeInput = document.getElementById('nome');
+        const siteInput = document.getElementById('site');
+        const imagemInput = document.getElementById('imagem');
+        const backButton = document.getElementById('backButton');
+        const pasteSiteBtn = document.getElementById('pasteSite');
+        const pasteImageBtn = document.getElementById('pasteImage');
+        const itemMenu = document.getElementById('itemMenu');
+        const openItemBtn = document.getElementById('openItemBtn');
+        const editItemBtn = document.getElementById('editItemBtn');
+        const selectBtn = document.getElementById('selectBtn');
+        const selectionMenu = document.getElementById('selectionMenu');
+        const cancelSelectionBtn = document.getElementById('cancelSelectionBtn');
+        const selectAllBtn = document.getElementById('selectAllBtn');
+        const moveBtn = document.getElementById('moveBtn');
+        const deleteBtn = document.getElementById('deleteBtn');
+        const moveHereIndicator = document.getElementById('moveHereIndicator');
+        const moveCancelBtn = document.getElementById('moveCancelBtn');
+        const backupBtn = document.getElementById('backupBtn');
+        const backupMenu = document.getElementById('backupMenu');
+        const downloadBackupBtn = document.getElementById('downloadBackupBtn');
+        const uploadBackupBtn = document.getElementById('uploadBackupBtn');
+        const fileInput = document.getElementById('fileInput');
+
+        // Variáveis para controle de edição
+        let editingItem = null;
+        let selectedItemData = null;
+        let selectionMode = false;
+        let selectedItems = new Set();
+        let moveMode = false;
+        let itemsToMove = [];
+        let moveSourcePath = []; // Caminho de onde os itens foram selecionados
+        let selectedFolderColor = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'; // Cor padrão
+        let scrollPositions = []; // Armazena as posições de scroll para cada nível de navegação
+
+        // Função para colar da área de transferência
+        async function pasteFromClipboard(inputElement) {
+            try {
+                const text = await navigator.clipboard.readText();
+                inputElement.value = text;
+                inputElement.focus();
+            } catch (err) {
+                console.error('Erro ao colar:', err);
+                alert('Não foi possível acessar a área de transferência. Por favor, cole manualmente com Ctrl+V.');
+            }
+        }
+
+        // Eventos dos botões de colar
+        pasteSiteBtn.addEventListener('click', () => pasteFromClipboard(siteInput));
+        pasteImageBtn.addEventListener('click', () => pasteFromClipboard(imagemInput));
+
+        // Event listeners para seleção de cor
+        document.querySelectorAll('.color-option').forEach(option => {
+            option.addEventListener('click', function() {
+                // Remove seleção anterior
+                document.querySelectorAll('.color-option').forEach(opt => {
+                    opt.classList.remove('selected');
+                });
+                
+                // Adiciona seleção na cor clicada
+                this.classList.add('selected');
+                
+                // Salva a cor selecionada
+                selectedFolderColor = this.getAttribute('data-color');
+            });
+        });
+
+        // Seleciona a primeira cor por padrão
+        document.addEventListener('DOMContentLoaded', () => {
+            const firstColor = document.querySelector('.color-option');
+            if (firstColor) {
+                firstColor.classList.add('selected');
+            }
+        });
+
+        // Estrutura de dados
+        let folders = [];
+        let items = []; // Itens da tela principal
+        let currentPath = []; // Caminho de navegação (array de índices)
+
+        // Carrega dados do armazenamento
+        function loadData() {
+            const saved = window.storage ? null : localStorage.getItem('foldersData');
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    folders = data.folders || [];
+                    items = data.items || [];
+                } catch (e) {
+                    console.error('Erro ao carregar dados:', e);
+                    folders = [];
+                    items = [];
+                }
+            }
+        }
+
+        // Salva dados no armazenamento
+        async function saveData() {
+            try {
+                const data = JSON.stringify({ folders, items });
+                if (window.storage) {
+                    await window.storage.set('foldersData', data);
+                } else {
+                    localStorage.setItem('foldersData', data);
+                }
+            } catch (e) {
+                console.error('Erro ao salvar dados:', e);
+            }
+        }
+
+        // Obtém a pasta ou raiz atual baseado no caminho
+        function getCurrentLocation() {
+            if (currentPath.length === 0) {
+                return { folders: folders, items: items, isRoot: true };
+            }
+            
+            let current = folders[currentPath[0]];
+            for (let i = 1; i < currentPath.length; i++) {
+                current = current.subfolders[currentPath[i]];
+            }
+            
+            if (!current.subfolders) current.subfolders = [];
+            if (!current.items) current.items = [];
+            
+            return { folders: current.subfolders, items: current.items, isRoot: false };
+        }
+
+        // Obtém uma localização baseada em um caminho específico
+        function getLocationByPath(path) {
+            if (path.length === 0) {
+                return { folders: folders, items: items };
+            }
+            
+            let current = folders[path[0]];
+            for (let i = 1; i < path.length; i++) {
+                current = current.subfolders[path[i]];
+            }
+            
+            if (!current.subfolders) current.subfolders = [];
+            if (!current.items) current.items = [];
+            
+            return { folders: current.subfolders, items: current.items };
+        }
+
+        // Conta recursivamente todos os itens dentro de uma pasta (incluindo subpastas)
+        function countItemsInFolder(folder) {
+            let count = 0;
+            
+            // Conta os itens diretos
+            if (folder.items && folder.items.length > 0) {
+                count += folder.items.length;
+            }
+            
+            // Conta itens nas subpastas recursivamente
+            if (folder.subfolders && folder.subfolders.length > 0) {
+                folder.subfolders.forEach(subfolder => {
+                    count += countItemsInFolder(subfolder);
+                });
+            }
+            
+            return count;
+        }
+
+        // Evento do botão voltar
+        backButton.addEventListener('click', () => {
+            if (currentPath.length > 0) {
+                currentPath.pop();
+                render();
+                
+                // Restaura a posição de scroll salva
+                const savedPosition = scrollPositions[currentPath.length];
+                if (savedPosition !== undefined) {
+                    // Usa setTimeout para garantir que o DOM foi renderizado
+                    setTimeout(() => {
+                        window.scrollTo(0, savedPosition);
+                    }, 0);
+                }
+            }
+        });
+
+        // Renderiza a tela
+        function render() {
+            foldersContainer.innerHTML = '';
+            const location = getCurrentLocation();
+            
+            // Gerencia visibilidade do botão voltar
+            if (selectionMode) {
+                // No modo seleção, esconde o botão voltar
+                backButton.style.display = 'none';
+            } else if (moveMode) {
+                // No modo mover, mostra o botão voltar se estiver dentro de uma pasta
+                if (currentPath.length === 0) {
+                    backButton.classList.remove('active');
+                    backButton.style.display = 'none';
+                } else {
+                    backButton.classList.add('active');
+                    backButton.style.display = 'block';
+                }
+            } else {
+                // Modo normal, mostra/esconde baseado no caminho
+                if (currentPath.length === 0) {
+                    backButton.classList.remove('active');
+                    backButton.style.display = 'none';
+                } else {
+                    backButton.classList.add('active');
+                    backButton.style.display = 'block';
+                }
+            }
+            
+            // Verifica se está vazio
+            if (location.folders.length === 0 && location.items.length === 0) {
+                emptyMessage.classList.remove('hidden');
+            } else {
+                emptyMessage.classList.add('hidden');
+                
+                // Renderiza pastas
+                location.folders.forEach((folder, index) => {
+                    const folderDiv = document.createElement('div');
+                    folderDiv.className = 'folder-item';
+                    folderDiv.textContent = folder.name;
+                    
+                    // Aplica a cor personalizada da pasta
+                    if (folder.color) {
+                        folderDiv.style.background = folder.color;
+                    }
+                    
+                    // Conta e exibe o número de itens dentro da pasta
+                    const itemCount = countItemsInFolder(folder);
+                    if (itemCount > 0) {
+                        const countBadge = document.createElement('div');
+                        countBadge.className = 'folder-item-count';
+                        countBadge.textContent = itemCount;
+                        folderDiv.appendChild(countBadge);
+                    }
+                    
+                    // Variáveis para controle de clique longo
+                    let longPressTimer;
+                    let longPressTriggered = false;
+                    let touchStartY = 0;
+                    let touchMoved = false;
+                    
+                    // Detecta início do toque/clique
+                    folderDiv.addEventListener('mousedown', (e) => {
+                        if (!selectionMode && !moveMode) {
+                            longPressTriggered = false;
+                            touchMoved = false;
+                            longPressTimer = setTimeout(() => {
+                                if (!touchMoved) {
+                                    longPressTriggered = true;
+                                    // Ativa modo seleção
+                                    selectionMode = true;
+                                    btn.style.display = 'none';
+                                    selectBtn.style.display = 'none';
+                                    backupBtn.style.display = 'none';
+                                    menu.classList.remove('active');
+                                    btn.classList.remove('active');
+                                    backupMenu.classList.remove('active');
+                                    backupBtn.classList.remove('active');
+                                    selectionMenu.classList.add('active');
+                                    
+                                    // Seleciona o item atual
+                                    selectedItems.add(`folder-${index}`);
+                                    render();
+                                }
+                            }, 500); // 500ms para clique longo
+                        }
+                    });
+                    
+                    // Cancela o timer se soltar antes
+                    folderDiv.addEventListener('mouseup', () => {
+                        clearTimeout(longPressTimer);
+                    });
+                    
+                    folderDiv.addEventListener('mouseleave', () => {
+                        clearTimeout(longPressTimer);
+                    });
+                    
+                    // Suporte para touch (mobile)
+                    folderDiv.addEventListener('touchstart', (e) => {
+                        if (!selectionMode && !moveMode) {
+                            longPressTriggered = false;
+                            touchMoved = false;
+                            touchStartY = e.touches[0].clientY;
+                            
+                            longPressTimer = setTimeout(() => {
+                                if (!touchMoved) {
+                                    longPressTriggered = true;
+                                    e.preventDefault();
+                                    // Ativa modo seleção
+                                    selectionMode = true;
+                                    btn.style.display = 'none';
+                                    selectBtn.style.display = 'none';
+                                    backupBtn.style.display = 'none';
+                                    menu.classList.remove('active');
+                                    btn.classList.remove('active');
+                                    backupMenu.classList.remove('active');
+                                    backupBtn.classList.remove('active');
+                                    selectionMenu.classList.add('active');
+                                    
+                                    // Seleciona o item atual
+                                    selectedItems.add(`folder-${index}`);
+                                    render();
+                                }
+                            }, 500);
+                        }
+                    });
+                    
+                    // Detecta movimento durante o toque
+                    folderDiv.addEventListener('touchmove', (e) => {
+                        const touchCurrentY = e.touches[0].clientY;
+                        const deltaY = Math.abs(touchCurrentY - touchStartY);
+                        
+                        // Se mover mais de 10 pixels, considera como scroll
+                        if (deltaY > 10) {
+                            touchMoved = true;
+                            clearTimeout(longPressTimer);
+                        }
+                    });
+                    
+                    folderDiv.addEventListener('touchend', () => {
+                        clearTimeout(longPressTimer);
+                    });
+                    
+                    if (moveMode) {
+                        // No modo mover, pastas são navegáveis (não destinos)
+                        folderDiv.addEventListener('click', (e) => {
+                            if (!longPressTriggered) {
+                                openFolder(index);
+                            }
+                        });
+                    } else if (selectionMode) {
+                        const itemId = `folder-${index}`;
+                        if (selectedItems.has(itemId)) {
+                            folderDiv.classList.add('selected');
+                        }
+                        folderDiv.addEventListener('click', () => {
+                            if (selectedItems.has(itemId)) {
+                                selectedItems.delete(itemId);
+                            } else {
+                                selectedItems.add(itemId);
+                            }
+                            render();
+                        });
+                    } else {
+                        folderDiv.addEventListener('click', (e) => {
+                            if (!longPressTriggered) {
+                                openFolder(index);
+                            }
+                        });
+                    }
+                    
+                    foldersContainer.appendChild(folderDiv);
+                });
+                
+                // Renderiza itens
+                location.items.forEach((item, index) => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'item-card';
+                    
+                    // Variáveis para controle de clique longo
+                    let longPressTimer;
+                    let longPressTriggered = false;
+                    let touchStartY = 0;
+                    let touchMoved = false;
+                    
+                    // Detecta início do toque/clique
+                    itemDiv.addEventListener('mousedown', (e) => {
+                        if (!selectionMode && !moveMode) {
+                            longPressTriggered = false;
+                            touchMoved = false;
+                            longPressTimer = setTimeout(() => {
+                                if (!touchMoved) {
+                                    longPressTriggered = true;
+                                    // Ativa modo seleção
+                                    selectionMode = true;
+                                    btn.style.display = 'none';
+                                    selectBtn.style.display = 'none';
+                                    backupBtn.style.display = 'none';
+                                    menu.classList.remove('active');
+                                    btn.classList.remove('active');
+                                    backupMenu.classList.remove('active');
+                                    backupBtn.classList.remove('active');
+                                    selectionMenu.classList.add('active');
+                                    
+                                    // Seleciona o item atual
+                                    selectedItems.add(`item-${index}`);
+                                    render();
+                                }
+                            }, 500); // 500ms para clique longo
+                        }
+                    });
+                    
+                    // Cancela o timer se soltar antes
+                    itemDiv.addEventListener('mouseup', () => {
+                        clearTimeout(longPressTimer);
+                    });
+                    
+                    itemDiv.addEventListener('mouseleave', () => {
+                        clearTimeout(longPressTimer);
+                    });
+                    
+                    // Suporte para touch (mobile)
+                    itemDiv.addEventListener('touchstart', (e) => {
+                        if (!selectionMode && !moveMode) {
+                            longPressTriggered = false;
+                            touchMoved = false;
+                            touchStartY = e.touches[0].clientY;
+                            
+                            longPressTimer = setTimeout(() => {
+                                if (!touchMoved) {
+                                    longPressTriggered = true;
+                                    e.preventDefault();
+                                    // Ativa modo seleção
+                                    selectionMode = true;
+                                    btn.style.display = 'none';
+                                    selectBtn.style.display = 'none';
+                                    backupBtn.style.display = 'none';
+                                    menu.classList.remove('active');
+                                    btn.classList.remove('active');
+                                    backupMenu.classList.remove('active');
+                                    backupBtn.classList.remove('active');
+                                    selectionMenu.classList.add('active');
+                                    
+                                    // Seleciona o item atual
+                                    selectedItems.add(`item-${index}`);
+                                    render();
+                                }
+                            }, 500);
+                        }
+                    });
+                    
+                    // Detecta movimento durante o toque
+                    itemDiv.addEventListener('touchmove', (e) => {
+                        const touchCurrentY = e.touches[0].clientY;
+                        const deltaY = Math.abs(touchCurrentY - touchStartY);
+                        
+                        // Se mover mais de 10 pixels, considera como scroll
+                        if (deltaY > 10) {
+                            touchMoved = true;
+                            clearTimeout(longPressTimer);
+                        }
+                    });
+                    
+                    itemDiv.addEventListener('touchend', () => {
+                        clearTimeout(longPressTimer);
+                    });
+                    
+                    if (moveMode) {
+                        // No modo mover, itens não são clicáveis
+                        itemDiv.style.opacity = '0.6';
+                        itemDiv.style.cursor = 'default';
+                    } else if (selectionMode) {
+                        const itemId = `item-${index}`;
+                        if (selectedItems.has(itemId)) {
+                            itemDiv.classList.add('selected');
+                        }
+                        itemDiv.addEventListener('click', () => {
+                            if (selectedItems.has(itemId)) {
+                                selectedItems.delete(itemId);
+                            } else {
+                                selectedItems.add(itemId);
+                            }
+                            render();
+                        });
+                    } else {
+                        // Evento de clique no item (modo normal)
+                        itemDiv.addEventListener('click', (e) => {
+                            if (!longPressTriggered) {
+                                showItemMenu(e, item, index);
+                            }
+                        });
+                    }
+                    
+                    const img = document.createElement('img');
+                    img.className = 'item-image';
+                    img.src = item.image || '';
+                    img.onerror = () => {
+                        img.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                    };
+                    
+                    const nameDiv = document.createElement('div');
+                    nameDiv.className = 'item-name';
+                    nameDiv.textContent = item.name;
+                    
+                    itemDiv.appendChild(img);
+                    itemDiv.appendChild(nameDiv);
+                    foldersContainer.appendChild(itemDiv);
+                });
+            }
+        }
+
+        function showItemMenu(event, item, index) {
+            event.preventDefault();
+            event.stopPropagation();
+            
+            selectedItemData = { item, index };
+            
+            // Posiciona o menu onde o usuário clicou
+            const x = event.clientX;
+            const y = event.clientY;
+            
+            itemMenu.style.left = x + 'px';
+            itemMenu.style.top = y + 'px';
+            itemMenu.classList.add('active');
+        }
+
+        openItemBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (selectedItemData && selectedItemData.item.site) {
+                window.open(selectedItemData.item.site, '_blank');
+            }
+            itemMenu.classList.remove('active');
+        });
+
+        editItemBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (selectedItemData) {
+                editingItem = selectedItemData.index;
+                nomeInput.value = selectedItemData.item.name || '';
+                siteInput.value = selectedItemData.item.site || '';
+                imagemInput.value = selectedItemData.item.image || '';
+                
+                // Abre o modal de edição
+                folderModal.classList.remove('active');
+                modal.classList.add('active');
+            }
+            itemMenu.classList.remove('active');
+        });
+
+        function openFolder(index) {
+            // Salva a posição de scroll atual antes de entrar na pasta
+            scrollPositions[currentPath.length] = window.scrollY;
+            
+            currentPath.push(index);
+            render();
+            
+            // Reseta o scroll para o topo ao entrar em uma nova pasta
+            window.scrollTo(0, 0);
+        }
+
+        function moveItemsToCurrentLocation() {
+            const targetLocation = getCurrentLocation();
+            
+            // CORREÇÃO: Obtém a localização de ORIGEM usando moveSourcePath
+            const sourceLocation = getLocationByPath(moveSourcePath);
+            
+            // Separa itens e pastas
+            const foldersToMove = itemsToMove.filter(i => i.type === 'folder').sort((a, b) => b.index - a.index);
+            const itemsToMoveFiltered = itemsToMove.filter(i => i.type === 'item').sort((a, b) => b.index - a.index);
+            
+            // Remove os itens da origem (de trás para frente para não bagunçar os índices)
+            foldersToMove.forEach(f => {
+                sourceLocation.folders.splice(f.index, 1);
+            });
+            
+            itemsToMoveFiltered.forEach(i => {
+                sourceLocation.items.splice(i.index, 1);
+            });
+            
+            // Adiciona no destino
+            foldersToMove.forEach(f => {
+                targetLocation.folders.push(f.data);
+            });
+            
+            itemsToMoveFiltered.forEach(i => {
+                targetLocation.items.push(i.data);
+            });
+            
+            // Finaliza
+            itemsToMove = [];
+            moveSourcePath = [];
+            moveMode = false;
+            btn.style.display = 'flex';
+            selectBtn.style.display = 'flex';
+            backupBtn.style.display = 'flex'; // Restaura o botão de backup
+            moveHereIndicator.classList.remove('active');
+            moveCancelBtn.classList.remove('active');
+            saveData();
+            render();
+        }
+
+        btn.addEventListener('click', () => {
+            if (!selectionMode) {
+                menu.classList.toggle('active');
+                btn.classList.toggle('active');
+                if (!menu.classList.contains('active')) {
+                    modal.classList.remove('active');
+                    folderModal.classList.remove('active');
+                }
+            }
+        });
+
+        selectBtn.addEventListener('click', () => {
+            selectionMode = !selectionMode;
+            selectedItems.clear();
+            
+            if (selectionMode) {
+                // Entra no modo de seleção
+                btn.style.display = 'none';
+                selectBtn.style.display = 'none'; // Esconde o próprio botão de seleção
+                backupBtn.style.display = 'none'; // Esconde o botão de backup
+                menu.classList.remove('active');
+                btn.classList.remove('active');
+                backupMenu.classList.remove('active');
+                backupBtn.classList.remove('active');
+                selectionMenu.classList.add('active');
+            } else {
+                // Sai do modo de seleção
+                btn.style.display = 'flex';
+                selectBtn.style.display = 'flex';
+                backupBtn.style.display = 'flex'; // Restaura o botão de backup
+                selectionMenu.classList.remove('active');
+            }
+            
+            render();
+        });
+
+        cancelSelectionBtn.addEventListener('click', () => {
+            selectionMode = false;
+            moveMode = false;
+            selectedItems.clear();
+            itemsToMove = [];
+            btn.style.display = 'flex';
+            selectBtn.style.display = 'flex';
+            backupBtn.style.display = 'flex'; // Restaura o botão de backup
+            selectionMenu.classList.remove('active');
+            moveHereIndicator.classList.remove('active');
+            moveCancelBtn.classList.remove('active');
+            render();
+        });
+
+        // Botão Selecionar Tudo
+        selectAllBtn.addEventListener('click', () => {
+            const location = getCurrentLocation();
+            
+            // Limpa seleção atual
+            selectedItems.clear();
+            
+            // Seleciona todas as pastas
+            location.folders.forEach((folder, index) => {
+                selectedItems.add(`folder-${index}`);
+            });
+            
+            // Seleciona todos os itens
+            location.items.forEach((item, index) => {
+                selectedItems.add(`item-${index}`);
+            });
+            
+            // Re-renderiza para mostrar todos selecionados
+            render();
+        });
+
+        // Botão cancelar movimento
+        moveCancelBtn.addEventListener('click', () => {
+            moveMode = false;
+            itemsToMove = [];
+            moveSourcePath = [];
+            btn.style.display = 'flex';
+            selectBtn.style.display = 'flex';
+            backupBtn.style.display = 'flex'; // Restaura o botão de backup
+            moveHereIndicator.classList.remove('active');
+            moveCancelBtn.classList.remove('active');
+            render();
+        });
+
+        // Botão Mover
+        moveBtn.addEventListener('click', () => {
+            if (selectedItems.size === 0) {
+                alert('Selecione pelo menos um item ou pasta para mover!');
+                return;
+            }
+            
+            // Salva o caminho atual (origem)
+            moveSourcePath = [...currentPath];
+            
+            // Prepara os itens para mover
+            const location = getCurrentLocation();
+            itemsToMove = [];
+            
+            selectedItems.forEach(id => {
+                const [type, indexStr] = id.split('-');
+                const index = parseInt(indexStr);
+                
+                if (type === 'folder') {
+                    itemsToMove.push({
+                        type: 'folder',
+                        index: index,
+                        data: JSON.parse(JSON.stringify(location.folders[index])) // Deep copy
+                    });
+                } else if (type === 'item') {
+                    itemsToMove.push({
+                        type: 'item',
+                        index: index,
+                        data: JSON.parse(JSON.stringify(location.items[index])) // Deep copy
+                    });
+                }
+            });
+            
+            // Ativa modo de mover
+            moveMode = true;
+            selectionMode = false;
+            selectedItems.clear();
+            selectBtn.style.display = 'none';
+            backupBtn.style.display = 'none'; // Esconde o botão de backup
+            moveHereIndicator.classList.add('active');
+            moveCancelBtn.classList.add('active');
+            selectionMenu.classList.remove('active');
+            render();
+        });
+
+        // Clique no indicador para mover para o local atual
+        moveHereIndicator.addEventListener('click', () => {
+            if (moveMode && itemsToMove.length > 0) {
+                moveItemsToCurrentLocation();
+            }
+        });
+
+        deleteBtn.addEventListener('click', () => {
+            if (selectedItems.size === 0) {
+                alert('Selecione pelo menos um item ou pasta para apagar!');
+                return;
+            }
+            
+            if (confirm(`Deseja realmente apagar ${selectedItems.size} item(ns)?`)) {
+                const location = getCurrentLocation();
+                
+                // Separa e ordena para deletar de trás para frente
+                const foldersToDelete = [];
+                const itemsToDelete = [];
+                
+                selectedItems.forEach(id => {
+                    const [type, indexStr] = id.split('-');
+                    const index = parseInt(indexStr);
+                    
+                    if (type === 'folder') {
+                        foldersToDelete.push(index);
+                    } else if (type === 'item') {
+                        itemsToDelete.push(index);
+                    }
+                });
+                
+                // Ordena decrescente para deletar de trás para frente
+                foldersToDelete.sort((a, b) => b - a);
+                itemsToDelete.sort((a, b) => b - a);
+                
+                // Deleta
+                foldersToDelete.forEach(index => {
+                    location.folders.splice(index, 1);
+                });
+                
+                itemsToDelete.forEach(index => {
+                    location.items.splice(index, 1);
+                });
+                
+                // Finaliza
+                selectedItems.clear();
+                selectionMode = false;
+                btn.style.display = 'flex';
+                selectBtn.style.display = 'flex';
+                backupBtn.style.display = 'flex'; // Restaura o botão de backup
+                selectionMenu.classList.remove('active');
+                saveData();
+                render();
+            }
+        });
+
+        addItemBtn.addEventListener('click', () => {
+            editingItem = null;
+            nomeInput.value = '';
+            siteInput.value = '';
+            imagemInput.value = '';
+            modal.classList.add('active');
+            folderModal.classList.remove('active');
+        });
+
+        createFolderBtn.addEventListener('click', () => {
+            nomePastaInput.value = '';
+            
+            // Reseta a seleção de cor para a primeira opção
+            selectedFolderColor = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+            document.querySelectorAll('.color-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            document.querySelector('.color-option').classList.add('selected');
+            
+            folderModal.classList.add('active');
+            modal.classList.remove('active');
+        });
+
+        saveFolderBtn.addEventListener('click', () => {
+            const folderName = nomePastaInput.value.trim();
+            if (folderName) {
+                const newFolder = {
+                    name: folderName,
+                    color: selectedFolderColor,
+                    items: [],
+                    subfolders: []
+                };
+                
+                const location = getCurrentLocation();
+                location.folders.push(newFolder);
+                
+                saveData();
+                nomePastaInput.value = '';
+                
+                // Reseta a cor selecionada para a padrão
+                selectedFolderColor = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                document.querySelectorAll('.color-option').forEach(opt => {
+                    opt.classList.remove('selected');
+                });
+                document.querySelector('.color-option').classList.add('selected');
+                
+                folderModal.classList.remove('active');
+                menu.classList.remove('active');
+                btn.classList.remove('active');
+                render();
+            }
+        });
+
+        saveItemBtn.addEventListener('click', () => {
+            const name = nomeInput.value.trim();
+            const site = siteInput.value.trim();
+            const image = imagemInput.value.trim();
+            
+            if (name) {
+                const location = getCurrentLocation();
+                
+                if (editingItem !== null) {
+                    // Editar item existente
+                    location.items[editingItem] = {
+                        name: name,
+                        site: site,
+                        image: image
+                    };
+                    editingItem = null;
+                } else {
+                    // Adicionar novo item
+                    const newItem = {
+                        name: name,
+                        site: site,
+                        image: image
+                    };
+                    location.items.push(newItem);
+                }
+                
+                saveData();
+                nomeInput.value = '';
+                siteInput.value = '';
+                imagemInput.value = '';
+                modal.classList.remove('active');
+                menu.classList.remove('active');
+                btn.classList.remove('active');
+                render();
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!modal.contains(e.target) && !folderModal.contains(e.target) && !btn.contains(e.target) && !menu.contains(e.target)) {
+                modal.classList.remove('active');
+                folderModal.classList.remove('active');
+                menu.classList.remove('active');
+                btn.classList.remove('active');
+            }
+            
+            if (!backupBtn.contains(e.target) && !backupMenu.contains(e.target)) {
+                backupMenu.classList.remove('active');
+                backupBtn.classList.remove('active');
+            }
+            
+            if (!itemMenu.contains(e.target) && !e.target.closest('.item-card')) {
+                itemMenu.classList.remove('active');
+            }
+        });
+
+        // Carrega dados e renderiza a tela inicial
+        loadData();
+        render();
+
+        // Event listeners para o botão de backup
+        backupBtn.addEventListener('click', () => {
+            backupMenu.classList.toggle('active');
+            backupBtn.classList.toggle('active');
+            
+            // Fecha outros menus se estiverem abertos
+            if (menu.classList.contains('active')) {
+                menu.classList.remove('active');
+                btn.classList.remove('active');
+            }
+        });
+
+        // Função para formatar data e hora
+        function getFormattedDateTime() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            
+            return `${year}-${month}-${day}_${hours}-${minutes}-${seconds}`;
+        }
+
+        // Download do backup
+        downloadBackupBtn.addEventListener('click', () => {
+            const data = {
+                folders: folders,
+                items: items,
+                exportDate: new Date().toISOString()
+            };
+            
+            const jsonString = JSON.stringify(data, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `foldersdata_backup_${getFormattedDateTime()}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            backupMenu.classList.remove('active');
+            backupBtn.classList.remove('active');
+            
+            alert('Backup realizado com sucesso!');
+        });
+
+        // Restaurar backup
+        uploadBackupBtn.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const data = JSON.parse(event.target.result);
+                    
+                    if (data.folders && data.items) {
+                        if (confirm('Deseja realmente restaurar o backup? Isso irá substituir todos os dados atuais.')) {
+                            folders = data.folders;
+                            items = data.items;
+                            currentPath = [];
+                            scrollPositions = [];
+                            
+                            saveData();
+                            render();
+                            
+                            alert('Backup restaurado com sucesso!');
+                        }
+                    } else {
+                        alert('Arquivo de backup inválido!');
+                    }
+                } catch (error) {
+                    alert('Erro ao ler o arquivo de backup!');
+                    console.error(error);
+                }
+                
+                backupMenu.classList.remove('active');
+                backupBtn.classList.remove('active');
+                fileInput.value = '';
+            };
+            
+            reader.readAsText(file);
+        });
+    </script>
+</body>
+</html>
