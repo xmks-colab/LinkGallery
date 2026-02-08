@@ -678,10 +678,7 @@
             height: 28px;
             color: white;
         }
-        #selectBtn {
-  opacity: 0;
-  pointer-events: none;
-}
+        
     </style>
 </head>
 <body>
@@ -693,7 +690,7 @@
 
     <button class="back-button" id="backButton">← Voltar</button>
 
-    <button class="select-button" id="selectBtn">
+   <button class="select-button" id="selectBtn" style="display:none;">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M9 11l3 3L22 4"></path>
             <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
@@ -899,24 +896,6 @@
         let moveSourcePath = [];
         let selectedFolderColor = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
         let scrollPositions = [];
-
-        // Função para converter link do Google Drive em URL de thumbnail
-        function convertGoogleDriveLink(url) {
-            if (!url) return url;
-            
-            // Verifica se é um link do Google Drive
-            const driveRegex = /drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/;
-            const match = url.match(driveRegex);
-            
-            if (match && match[1]) {
-                // Extrai o ID do arquivo e retorna a URL do thumbnail
-                const fileId = match[1];
-                return `https://lh3.googleusercontent.com/d/${fileId}=w1000?authuser=0`;
-            }
-            
-            // Se não for do Google Drive, retorna a URL original
-            return url;
-        }
 
         // Função para colar da área de transferência
         async function pasteFromClipboard(inputElement) {
@@ -1611,9 +1590,6 @@
             const site = siteInput.value.trim();
             const image = imagemInput.value.trim();
             
-            // Converte link do Google Drive se necessário
-            const convertedImage = convertGoogleDriveLink(image);
-            
             if (name) {
                 const location = getCurrentLocation();
                 
@@ -1621,14 +1597,14 @@
                     location.items[editingItem] = {
                         name: name,
                         site: site,
-                        image: convertedImage
+                        image: image
                     };
                     editingItem = null;
                 } else {
                     const newItem = {
                         name: name,
                         site: site,
-                        image: convertedImage
+                        image: image
                     };
                     location.items.push(newItem);
                 }
