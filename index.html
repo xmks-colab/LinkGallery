@@ -82,14 +82,15 @@
         }
 
         .item-card {
-            width: 120px;
-            height: 150px;
+            width: 140px;
+            height: 190px;
             border-radius: 10px;
             overflow: hidden;
             cursor: pointer;
             transition: all 0.3s ease;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
             background: white;
+            position: relative;
         }
 
         .item-card:hover {
@@ -99,25 +100,40 @@
 
         .item-image {
             width: 100%;
-            height: 120px;
+            height: 190px;
             object-fit: cover;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .item-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
         .item-name {
-            height: 30px;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: auto;
+            min-height: 35px;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: white;
-            color: #333;
+            background: rgba(0, 0, 0, 0.75);
+            color: white;
             font-size: 0.85rem;
             font-weight: 600;
-            padding: 0 5px;
+            padding: 8px 10px;
             text-align: center;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
         }
 
         .floating-button {
@@ -678,10 +694,146 @@
             height: 28px;
             color: white;
         }
-        #selectBtn {
-  opacity: 0;
-  pointer-events: none;
-}
+
+        .image-adjust-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.95);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            flex-direction: column;
+            gap: 30px;
+            padding: 20px;
+        }
+
+        .image-adjust-modal.active {
+            display: flex;
+        }
+
+        .image-adjust-container {
+            position: relative;
+            width: 140px;
+            height: 190px;
+            overflow: hidden;
+            border-radius: 10px;
+            background: #222;
+            cursor: move;
+            touch-action: none;
+            border: 3px solid #667eea;
+            box-shadow: 0 0 30px rgba(102, 126, 234, 0.5);
+        }
+
+        .image-adjust-container::before {
+            content: 'Arraste para posicionar';
+            position: absolute;
+            bottom: -35px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #667eea;
+            font-size: 0.9rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .image-adjust-container img {
+            position: absolute;
+            max-width: none;
+            max-height: none;
+            width: auto;
+            height: auto;
+            user-select: none;
+            -webkit-user-drag: none;
+        }
+
+        .image-adjust-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .zoom-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .zoom-btn {
+            width: 35px;
+            height: 35px;
+            background: #667eea;
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .zoom-btn:hover {
+            background: #764ba2;
+            transform: scale(1.1);
+        }
+
+        .zoom-value {
+            min-width: 50px;
+            text-align: center;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .adjust-action-btn {
+            width: 55px;
+            height: 55px;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .adjust-action-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .adjust-action-btn svg {
+            width: 26px;
+            height: 26px;
+        }
+
+        .adjust-action-btn.save {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .adjust-action-btn.cancel {
+            background: #f5576c;
+            color: white;
+        }
+
+        .selection-action-btn.adjust {
+            color: #FF9800;
+        }
+
+        .selection-action-btn.adjust:hover {
+            background: #FF9800;
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -701,17 +853,10 @@
     </button>
 
     <div class="selection-menu" id="selectionMenu">
-        <button class="selection-action-btn cancel" id="cancelSelectionBtn" title="Cancelar">
+        <button class="selection-action-btn delete" id="deleteBtn" title="Apagar">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-        </button>
-        <button class="selection-action-btn select-all" id="selectAllBtn" title="Selecionar Tudo">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M9 11l3 3L22 4"></path>
-                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
-                <path d="M9 19l-3-3"></path>
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
             </svg>
         </button>
         <button class="selection-action-btn move" id="moveBtn" title="Mover">
@@ -724,10 +869,24 @@
                 <line x1="12" y1="2" x2="12" y2="22"></line>
             </svg>
         </button>
-        <button class="selection-action-btn delete" id="deleteBtn" title="Apagar">
+        <button class="selection-action-btn adjust" id="adjustImageBtn" title="Ajustar Imagem">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="3 6 5 6 21 6"></polyline>
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                <polyline points="21 15 16 10 5 21"></polyline>
+            </svg>
+        </button>
+        <button class="selection-action-btn select-all" id="selectAllBtn" title="Selecionar Tudo">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 11l3 3L22 4"></path>
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                <path d="M9 19l-3-3"></path>
+            </svg>
+        </button>
+        <button class="selection-action-btn cancel" id="cancelSelectionBtn" title="Cancelar">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
             </svg>
         </button>
     </div>
@@ -854,6 +1013,30 @@
         </button>
     </div>
 
+    <div class="image-adjust-modal" id="imageAdjustModal">
+        <div class="image-adjust-container" id="imageAdjustContainer">
+            <img id="adjustingImage" src="" alt="Ajustando imagem">
+        </div>
+        <div class="image-adjust-controls">
+            <button class="adjust-action-btn cancel" id="cancelAdjustBtn">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+            <div class="zoom-control">
+                <button class="zoom-btn" id="zoomOutBtn">−</button>
+                <span class="zoom-value" id="zoomValue">100%</span>
+                <button class="zoom-btn" id="zoomInBtn">+</button>
+            </div>
+            <button class="adjust-action-btn save" id="saveAdjustBtn">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+            </button>
+        </div>
+    </div>
+
     <script>
         const btn = document.getElementById('floatingBtn');
         const menu = document.getElementById('buttonMenu');
@@ -888,6 +1071,15 @@
         const fileInput = document.getElementById('fileInput');
         const backupToggleBtn = document.getElementById('backupToggleBtn');
         const backupSubmenu = document.getElementById('backupSubmenu');
+        const adjustImageBtn = document.getElementById('adjustImageBtn');
+        const imageAdjustModal = document.getElementById('imageAdjustModal');
+        const imageAdjustContainer = document.getElementById('imageAdjustContainer');
+        const adjustingImage = document.getElementById('adjustingImage');
+        const cancelAdjustBtn = document.getElementById('cancelAdjustBtn');
+        const saveAdjustBtn = document.getElementById('saveAdjustBtn');
+        const zoomInBtn = document.getElementById('zoomInBtn');
+        const zoomOutBtn = document.getElementById('zoomOutBtn');
+        const zoomValue = document.getElementById('zoomValue');
 
         // Variáveis para controle de edição
         let editingItem = null;
@@ -899,22 +1091,31 @@
         let moveSourcePath = [];
         let selectedFolderColor = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
         let scrollPositions = [];
+        
+        // Variáveis para ajuste de imagem - CORRIGIDO
+        let currentAdjustingItems = [];
+        let currentItemIndexAdjusting = 0;
+        let imageScale = 1;
+        let imageOffsetX = 0;  // Offset em relação ao centro
+        let imageOffsetY = 0;  // Offset em relação ao centro
+        let isDragging = false;
+        let startX = 0;
+        let startY = 0;
+        let dragStartOffsetX = 0;
+        let dragStartOffsetY = 0;
 
         // Função para converter link do Google Drive em URL de thumbnail
         function convertGoogleDriveLink(url) {
             if (!url) return url;
             
-            // Verifica se é um link do Google Drive
             const driveRegex = /drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/;
             const match = url.match(driveRegex);
             
             if (match && match[1]) {
-                // Extrai o ID do arquivo e retorna a URL do thumbnail
                 const fileId = match[1];
                 return `https://lh3.googleusercontent.com/d/${fileId}=w1000?authuser=0`;
             }
             
-            // Se não for do Google Drive, retorna a URL original
             return url;
         }
 
@@ -960,7 +1161,7 @@
 
         // Carrega dados do armazenamento
         function loadData() {
-            const saved = window.storage ? null : localStorage.getItem('foldersData');
+            const saved = localStorage.getItem('foldersData');
             if (saved) {
                 try {
                     const data = JSON.parse(saved);
@@ -975,14 +1176,10 @@
         }
 
         // Salva dados no armazenamento
-        async function saveData() {
+        function saveData() {
             try {
                 const data = JSON.stringify({ folders, items });
-                if (window.storage) {
-                    await window.storage.set('foldersData', data);
-                } else {
-                    localStorage.setItem('foldersData', data);
-                }
+                localStorage.setItem('foldersData', data);
             } catch (e) {
                 console.error('Erro ao salvar dados:', e);
             }
@@ -1053,6 +1250,31 @@
                 }
             }
         });
+
+        // Aplica o ajuste de imagem ao elemento - CORRIGIDO
+        function applyImageAdjustment(imgElement, adjustment) {
+            if (!adjustment) return;
+            
+            const containerWidth = 140;
+            const containerHeight = 190;
+            
+            // Calcula a posição para centralizar + offset
+            const centerX = containerWidth / 2;
+            const centerY = containerHeight / 2;
+            
+            const translateX = centerX + adjustment.offsetX;
+            const translateY = centerY + adjustment.offsetY;
+            
+            // Remove object-fit e usa posicionamento absoluto
+            imgElement.style.objectFit = 'none';
+            imgElement.style.objectPosition = 'initial';
+            imgElement.style.width = 'auto';
+            imgElement.style.height = 'auto';
+            imgElement.style.transform = `translate(-50%, -50%) translate(${translateX}px, ${translateY}px) scale(${adjustment.scale})`;
+            imgElement.style.left = '0';
+            imgElement.style.top = '0';
+            imgElement.style.position = 'absolute';
+        }
 
         // Renderiza a tela
         function render() {
@@ -1299,18 +1521,28 @@
                         });
                     }
                     
+                    const imgContainer = document.createElement('div');
+                    imgContainer.className = 'item-image';
+                    
                     const img = document.createElement('img');
-                    img.className = 'item-image';
                     img.src = item.image || '';
+                    
+                    // Aplica ajustes de imagem se existirem
+                    if (item.imageAdjust) {
+                        applyImageAdjustment(img, item.imageAdjust);
+                    }
+                    
                     img.onerror = () => {
-                        img.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                        imgContainer.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
                     };
+                    
+                    imgContainer.appendChild(img);
                     
                     const nameDiv = document.createElement('div');
                     nameDiv.className = 'item-name';
                     nameDiv.textContent = item.name;
                     
-                    itemDiv.appendChild(img);
+                    itemDiv.appendChild(imgContainer);
                     itemDiv.appendChild(nameDiv);
                     foldersContainer.appendChild(itemDiv);
                 });
@@ -1406,7 +1638,6 @@
             }
         });
 
-        // Toggle do submenu de backup
         backupToggleBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             backupSubmenu.classList.toggle('active');
@@ -1611,17 +1842,19 @@
             const site = siteInput.value.trim();
             const image = imagemInput.value.trim();
             
-            // Converte link do Google Drive se necessário
             const convertedImage = convertGoogleDriveLink(image);
             
             if (name) {
                 const location = getCurrentLocation();
                 
                 if (editingItem !== null) {
+                    // Preserva o ajuste de imagem existente ao editar
+                    const existingAdjust = location.items[editingItem].imageAdjust;
                     location.items[editingItem] = {
                         name: name,
                         site: site,
-                        image: convertedImage
+                        image: convertedImage,
+                        imageAdjust: existingAdjust
                     };
                     editingItem = null;
                 } else {
@@ -1644,7 +1877,6 @@
             }
         });
 
-        // Função para formatar data e hora
         function getFormattedDateTime() {
             const now = new Date();
             const year = now.getFullYear();
@@ -1657,7 +1889,6 @@
             return `${year}-${month}-${day}_${hours}-${minutes}-${seconds}`;
         }
 
-        // Download do backup
         downloadBackupBtn.addEventListener('click', () => {
             const data = {
                 folders: folders,
@@ -1683,7 +1914,6 @@
             alert('Backup realizado com sucesso!');
         });
 
-        // Restaurar backup
         uploadBackupBtn.addEventListener('click', () => {
             fileInput.click();
         });
@@ -1737,6 +1967,199 @@
             if (!itemMenu.contains(e.target) && !e.target.closest('.item-card')) {
                 itemMenu.classList.remove('active');
             }
+        });
+
+        // Funcionalidade de ajuste de imagem - CORRIGIDO
+        adjustImageBtn.addEventListener('click', () => {
+            if (selectedItems.size === 0) {
+                alert('Selecione pelo menos um item para ajustar a imagem!');
+                return;
+            }
+
+            const location = getCurrentLocation();
+            currentAdjustingItems = [];
+            
+            selectedItems.forEach(id => {
+                const [type, indexStr] = id.split('-');
+                const index = parseInt(indexStr);
+                
+                if (type === 'item') {
+                    currentAdjustingItems.push({
+                        index: index,
+                        item: location.items[index]
+                    });
+                }
+            });
+
+            if (currentAdjustingItems.length === 0) {
+                alert('Selecione itens (não pastas) para ajustar a imagem!');
+                return;
+            }
+
+            currentItemIndexAdjusting = 0;
+            openImageAdjustModal();
+        });
+
+        function openImageAdjustModal() {
+            const currentItem = currentAdjustingItems[currentItemIndexAdjusting];
+            
+            // Carrega ajustes salvos ou usa padrão
+            if (currentItem.item.imageAdjust) {
+                imageScale = currentItem.item.imageAdjust.scale;
+                imageOffsetX = currentItem.item.imageAdjust.offsetX;
+                imageOffsetY = currentItem.item.imageAdjust.offsetY;
+            } else {
+                imageScale = 1;
+                imageOffsetX = 0;
+                imageOffsetY = 0;
+            }
+
+            // Configura a imagem
+            adjustingImage.src = currentItem.item.image;
+            adjustingImage.onload = () => {
+                // Define o tamanho natural da imagem
+                adjustingImage.style.width = adjustingImage.naturalWidth + 'px';
+                adjustingImage.style.height = adjustingImage.naturalHeight + 'px';
+                
+                // Se não há ajuste salvo, centraliza a imagem com escala para caber
+                if (!currentItem.item.imageAdjust) {
+                    const imgNaturalWidth = adjustingImage.naturalWidth;
+                    const imgNaturalHeight = adjustingImage.naturalHeight;
+                    
+                    // Calcula a escala para a imagem cobrir o container (como cover)
+                    const scaleToFit = Math.max(
+                        140 / imgNaturalWidth,
+                        190 / imgNaturalHeight
+                    );
+                    
+                    imageScale = scaleToFit;
+                    imageOffsetX = 0;
+                    imageOffsetY = 0;
+                }
+                
+                updateImageTransform();
+            };
+            
+            imageAdjustModal.classList.add('active');
+        }
+
+        function updateImageTransform() {
+            // Container é 140x190px
+            const centerX = 70;  // 140 / 2
+            const centerY = 95;  // 190 / 2
+            
+            const translateX = centerX + imageOffsetX;
+            const translateY = centerY + imageOffsetY;
+            
+            adjustingImage.style.transform = `translate(-50%, -50%) translate(${translateX}px, ${translateY}px) scale(${imageScale})`;
+            adjustingImage.style.left = '0';
+            adjustingImage.style.top = '0';
+            
+            zoomValue.textContent = `${Math.round(imageScale * 100)}%`;
+        }
+
+        // Controles de zoom
+        zoomInBtn.addEventListener('click', () => {
+            imageScale = Math.min(imageScale + 0.1, 3);
+            updateImageTransform();
+        });
+
+        zoomOutBtn.addEventListener('click', () => {
+            imageScale = Math.max(imageScale - 0.1, 0.5);
+            updateImageTransform();
+        });
+
+        // Arrastar imagem - CORRIGIDO
+        imageAdjustContainer.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            dragStartOffsetX = imageOffsetX;
+            dragStartOffsetY = imageOffsetY;
+            startX = e.clientX;
+            startY = e.clientY;
+            imageAdjustContainer.style.cursor = 'grabbing';
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            const deltaX = e.clientX - startX;
+            const deltaY = e.clientY - startY;
+            imageOffsetX = dragStartOffsetX + deltaX;
+            imageOffsetY = dragStartOffsetY + deltaY;
+            updateImageTransform();
+        });
+
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+            if (imageAdjustContainer) {
+                imageAdjustContainer.style.cursor = 'move';
+            }
+        });
+
+        // Touch events para mobile - CORRIGIDO
+        imageAdjustContainer.addEventListener('touchstart', (e) => {
+            isDragging = true;
+            dragStartOffsetX = imageOffsetX;
+            dragStartOffsetY = imageOffsetY;
+            const touch = e.touches[0];
+            startX = touch.clientX;
+            startY = touch.clientY;
+        });
+
+        document.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            e.preventDefault();
+            const touch = e.touches[0];
+            const deltaX = touch.clientX - startX;
+            const deltaY = touch.clientY - startY;
+            imageOffsetX = dragStartOffsetX + deltaX;
+            imageOffsetY = dragStartOffsetY + deltaY;
+            updateImageTransform();
+        });
+
+        document.addEventListener('touchend', () => {
+            isDragging = false;
+        });
+
+        // Salvar ajuste - CORRIGIDO
+        saveAdjustBtn.addEventListener('click', () => {
+            const currentItem = currentAdjustingItems[currentItemIndexAdjusting];
+            const location = getCurrentLocation();
+            
+            // Salva o ajuste no item
+            if (!location.items[currentItem.index].imageAdjust) {
+                location.items[currentItem.index].imageAdjust = {};
+            }
+            
+            location.items[currentItem.index].imageAdjust = {
+                scale: imageScale,
+                offsetX: imageOffsetX,
+                offsetY: imageOffsetY
+            };
+
+            // Verifica se há mais itens para ajustar
+            currentItemIndexAdjusting++;
+            if (currentItemIndexAdjusting < currentAdjustingItems.length) {
+                openImageAdjustModal();
+            } else {
+                // Finaliza
+                imageAdjustModal.classList.remove('active');
+                currentAdjustingItems = [];
+                currentItemIndexAdjusting = 0;
+                selectionMode = false;
+                selectedItems.clear();
+                btn.style.display = 'flex';
+                selectBtn.style.display = 'flex';
+                selectionMenu.classList.remove('active');
+                saveData();
+                render();
+            }
+        });
+
+        // Cancelar ajuste
+        cancelAdjustBtn.addEventListener('click', () => {
+            imageAdjustModal.classList.remove('active');
+            currentAdjustingItems = [];
+            currentItemIndexAdjusting = 0;
         });
 
         loadData();
